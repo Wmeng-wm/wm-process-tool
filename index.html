@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>WM 工艺计算平台 V4.5（稳定免授权版）</title>
+<title>WM 工艺计算平台 V4.3（密绕增强版）</title>
 <style>
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
@@ -36,8 +36,8 @@ hr{border:none;border-top:1px solid #edf1f6;margin:14px 0}
 </head>
 <body>
 
-<div id="loginBox" class="hidden" class="card">
-  <h1>WM 工艺计算平台 V4.5（稳定免授权版）</h1>
+<div id="loginBox" class="card">
+  <h1>WM 工艺计算平台 V4.3（密绕增强版）</h1>
   <div class="muted">已整合：7×7 缆绳 / 单双三层绕丝 / 外径反推 / 密绕捻距 / 授权登录 / 历史记录 / 导出 / 校准参数</div>
   <div class="grid" style="margin-top:14px;">
     <div><input id="pwd" type="password" placeholder="请输入授权码"></div>
@@ -46,10 +46,10 @@ hr{border:none;border-top:1px solid #edf1f6;margin:14px 0}
   <div id="loginMsg" class="muted" style="margin-top:10px;"></div>
 </div>
 
-<div id="app">
+<div id="app" class="hidden">
   <div class="card">
     <h1>WM 医疗编织 / 缆绳 / 绕丝工艺计算平台</h1>
-    <div class="muted">WM 工艺支持版 · V4.5 稳定免授权版</div>
+    <div class="muted">WM 工艺支持版 · 医疗编织参数辅助工具</div>
     <div class="tabbar" style="margin-top:12px;">
       <button class="tab active" onclick="showTab('rope', this)">7×7 缆绳</button>
       <button class="tab" onclick="showTab('coil1', this)">单层绕丝</button>
@@ -212,7 +212,7 @@ hr{border:none;border-top:1px solid #edf1f6;margin:14px 0}
 
 <script>
 const PASSWORD="WM-NEIBU"; let currentText="";
-function doLogin(){document.getElementById("loginBox")?.classList.add("hidden");document.getElementById("app").classList.remove("hidden");}else{document.getElementById('loginMsg').innerHTML='<span class="bad">授权码错误</span>';}}
+function doLogin(){const p=document.getElementById('pwd').value.trim(); if(p===PASSWORD){document.getElementById('loginBox').classList.add('hidden');document.getElementById('app').classList.remove('hidden');loadSettings();calcRope();}else{document.getElementById('loginMsg').innerHTML='<span class="bad">授权码错误</span>';}}
 function showTab(id,btn){['rope','coil1','coil2','coil3','reverse','dense','settings'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');}
 function helixFactor(radius,pitch){const c=2*Math.PI*radius; return Math.sqrt(1+(c/pitch)**2);}
 function tightMul(t){return t==='soft'?1.03:(t==='tight'?0.97:1.00);}
@@ -257,107 +257,9 @@ function calcRope(){
 
 function fillRope(){r_d.value=0.20;r_L.value=10;r_loss.value=5;r_spool.value=49;r_rpm.value=70;r_p1.value=20;r_p2.value=11;r_p3.value=20;r_dir1.value='Z';r_dir2.value='S';r_dir3.value='Z';r_run.value=10;r_tight.value='normal';calcRope();}
 function coilLayerByPitch(coreDia,wireDia,n,pitch,len,tight,loss,onoff='ON'){if(onoff==='OFF')return{ratio:0,od:coreDia,total:0,total2:0,per:0,per2:0,pitch:pitch}; const coilRatioFix=getS('s_coil_ratio','1.000'),coilOdFix=getS('s_coil_od','1.000'); const pathDia=coreDia+wireDia,one=Math.sqrt(1+Math.pow((Math.PI*pathDia)/pitch,2)),ratio=one*n*tightMul(tight)*coilRatioFix,od=(coreDia+2*wireDia)*tightOdMul(tight)*coilOdFix,total=ratio*len,total2=total*(1+loss/100),per=n>0?total/n:0,per2=n>0?total2/n:0; return{ratio,od,total,total2,per,per2,pitch};}
-function calcCoil1(){const core=+c1_core.value,wire=+c1_wire.value,n=+c1_n.value,pitch=+c1_pitch.value,dir=c1_dir.value,onoff=c1_on.value,len=+c1_len.value,tight=c1_tight.value,loss=+c1_loss.value; const x=coilLayerByPitch(core,wire,n,pitch,len,tight,loss,onoff); setOut('out_c1',`<div class="grid"><div class="kpi"><div class="muted">用丝比</div><div class="big">1 : ${x.ratio.toFixed(2)}</div></div><div class="kpi"><div class="muted">理论外径</div><div class="big">${x.od.toFixed(3)} mm</div></div><div class="kpi"><div class="muted">捻距</div><div class="big">${x.pitch.toFixed(4)} mm</div></div></div><p>捻向：<b>${dir}</b> ｜ 层状态：<b>${onoff}</b></p><p>理论总用丝：<b>${x.total.toFixed(2)} m</b> ｜ 含损耗：<b class="ok">${x.total2.toFixed(2)} m</b></p><p>每股理论：<b>${x.per.toFixed(2)} m</b> ｜ 建议每股：<b class="ok">${x.per2.toFixed(2)} m</b></p>`,`[单层绕丝]\\n用丝比≈1:${x.ratio.toFixed(2)}\\n理论外径≈${x.od.toFixed(3)}mm\\n总用丝≈${x.total2.toFixed(2)}m`);}
-function calcCoil2(){ const core=+c2_core.value,w1=+c2_w1.value,n1=+c2_n1.value,p1=+c2_p1.value,on1=c2_on1.value,w2=+c2_w2.value,n2=+c2_n2.value,p2=+c2_p2.value,on2=c2_on2.value,len=+c2_len.value,tight=c2_tight.value,loss=+c2_loss.value; const L1=coilLayerByPitch(core,w1,n1,p1,len,tight,0,on1),L2=coilLayerByPitch(L1.od,w2,n2,p2,len,tight,0,on2),total=L1.total+L2.total,total2=total*(1+loss/100),od=L2.od; setOut('out_c2',`<div class="grid"><div class="kpi"><div class="muted">总用丝比</div><div class="big">1 : ${(total/len).toFixed(2)}</div></div><div class="kpi"><div class="muted">理论外径</div><div class="big">${od.toFixed(3)} mm</div></div><div class="kpi"><div class="muted">总用丝</div><div class="big">${total2.toFixed(2)} m</div></div></div><p>第一层：<b>${p1}</b> mm ｜ 第二层：<b>${p2}</b> mm</p>`,`[双层绕丝]\\n总用丝比≈1:${(total/len).toFixed(2)}\\n理论外径≈${od.toFixed(3)}mm\\n总用丝≈${total2.toFixed(2)}m`);}
-function calcCoil3(){ const core=+c3_core.value,w1=+c3_w1.value,n1=+c3_n1.value,p1=+c3_p1.value,on1=c3_on1.value,w2=+c3_w2.value,n2=+c3_n2.value,p2=+c3_p2.value,on2=c3_on2.value,w3=+c3_w3.value,n3=+c3_n3.value,p3=+c3_p3.value,on3=c3_on3.value,len=+c3_len.value,tight=c3_tight.value,loss=+c3_loss.value; const A=coilLayerByPitch(core,w1,n1,p1,len,tight,0,on1),B=coilLayerByPitch(A.od,w2,n2,p2,len,tight,0,on2),C=coilLayerByPitch(B.od,w3,n3,p3,len,tight,0,on3),total=A.total+B.total+C.total,total2=total*(1+loss/100),od=C.od; setOut('out_c3',`<div class="grid"><div class="kpi"><div class="muted">总用丝比</div><div class="big">1 : ${(total/len).toFixed(2)}</div></div><div class="kpi"><div class="muted">理论外径</div><div class="big">${od.toFixed(3)} mm</div></div><div class="kpi"><div class="muted">总用丝</div><div class="big">${total2.toFixed(2)} m</div></div></div><p>内层：<b>${p1}</b> mm ｜ 中层：<b>${p2}</b> mm ｜ 外层：<b>${p3}</b> mm</p>`,`[三层绕丝]\\n总用丝比≈1:${(total/len).toFixed(2)}\\n理论外径≈${od.toFixed(3)}mm\\n总用丝≈${total2.toFixed(2)}m`);}
-function calcReverse(){ const type=v_type.value,od=+v_od.value,core=+v_core.value,tight=v_tight.value,len=+v_len.value,loss=+v_loss.value; let html='',text=''; if(type==='rope77'){ const d=0.2*(od/(1.48*tightOdMul(tight)*getS('s_rope_od','1.000'))),ratio=52*tightMul(tight)*getS('s_rope_ratio','1.000'),total2=ratio*len*(1+loss/100); html=`<p class="big">建议单丝直径 ≈ ${d.toFixed(3)} mm</p><p>估算用丝比 ≈ <b>1:${ratio.toFixed(2)}</b></p><p>${len}米总用丝 ≈ <b>${total2.toFixed(2)} m</b></p>`; text=`[外径反推-7×7]\\n建议单丝≈${d.toFixed(3)}mm`; } else { const layers=type==='coil1'?1:(type==='coil2'?2:3),wire=Math.max((od-core)/(2*layers),0.01),suggestPitch=layers===1?0.18:(layers===2?0.67:0.8566),ratioOne=Math.sqrt(1+Math.pow((Math.PI*(core+wire))/suggestPitch,2)),total2=ratioOne*6*layers*len*(1+loss/100); html=`<p class="big">建议丝径 ≈ ${wire.toFixed(3)} mm</p><p>建议股数：每层先按 <b>6股</b> 起步</p><p>建议捻距：先按 <b>${suggestPitch}</b> mm 试样</p><p>估算总用丝 ≈ <b>${total2.toFixed(2)} m</b></p>`; text=`[外径反推-绕丝]\\n建议丝径≈${wire.toFixed(3)}mm`; } setOut('out_v', html, text); }
 
-
-function calcDense(){
-  const core=+d_core.value, wire=+d_wire.value, n=Math.max(1,+d_n.value), len=+d_len.value, mode=d_mode.value, loss=+d_loss.value, profile=d_profile.value, goal=d_goal.value;
-  const denseFix=getS('s_dense_pitch','1.000'), coilRatioFix=getS('s_coil_ratio','1.000'), coilOdFix=getS('s_coil_od','1.000');
-
-  let p_use=0, p_range_low=0, p_range_high=0, p_limit=0, p_start=0, p_stable=0, ratio=0, od=0, total=0, total2=0, per=0, per2=0, note='';
-
-  if(profile==='multi'){
-    // 多股并列密绕：按覆盖宽度计算，更符合现场机台逻辑
-    const kTight = mode==='soft' ? 1.02 : (mode==='tight' ? 0.90 : 0.95);
-    const baseCover = n * wire;
-    p_start = baseCover * kTight * denseFix;
-    p_stable = p_start;
-    p_limit = baseCover * 0.88 * denseFix;
-
-    if(goal==='limit') p_use = p_limit;
-    else if(goal==='start') p_use = p_start;
-    else p_use = p_stable;
-
-    p_range_low = p_use * 0.97;
-    p_range_high = p_use * 1.03;
-
-    // 用丝比：每根丝近似按螺旋路径；但捻距用并列覆盖值
-    const pathDia = core + wire;
-    const one = Math.sqrt(1 + Math.pow((Math.PI*pathDia)/p_use,2));
-    ratio = one * n * coilRatioFix;
-    od = (core + 2*wire) * tightOdMul(mode) * coilOdFix;
-    note = '多股并列密绕已按“股数 × 丝径 × 覆盖修正”计算，不再按单股螺旋节距错误估算。';
-  } else {
-    // 单股/常规密绕：按单丝节距经验
-    let kBase = mode==='soft' ? 1.03 : (mode==='tight' ? 0.90 : 0.95);
-    p_start = wire * kBase * denseFix;
-    p_limit = wire * 0.82 * denseFix;
-    p_stable = p_start * 1.04;
-    p_use = goal==='limit' ? p_limit : (goal==='start' ? p_start : p_stable);
-    p_range_low = p_use * 0.95;
-    p_range_high = p_use * 1.08;
-
-    const pathDia = core + wire;
-    const one = Math.sqrt(1 + Math.pow((Math.PI*pathDia)/p_use,2));
-    ratio = one * n * tightMul(mode) * coilRatioFix;
-    od = (core + 2*wire) * tightOdMul(mode) * coilOdFix;
-    note = '常规单层密绕按单丝螺旋节距模型计算。';
-  }
-
-  total = ratio * len;
-  total2 = total * (1 + loss/100);
-  per = total / n;
-  per2 = total2 / n;
-
-  const html = `
-  <div class="grid">
-    <div class="kpi"><div class="muted">推荐密绕捻距</div><div class="big">${p_use.toFixed(4)} mm</div></div>
-    <div class="kpi"><div class="muted">建议试样范围</div><div class="big">${p_range_low.toFixed(4)} ~ ${p_range_high.toFixed(4)}</div></div>
-    <div class="kpi"><div class="muted">理论外径</div><div class="big">${od.toFixed(3)} mm</div></div>
-    <div class="kpi"><div class="muted">用丝比</div><div class="big">1 : ${ratio.toFixed(2)}</div></div>
-  </div>
-  <hr>
-  <p>理论极限密绕：<b>${p_limit.toFixed(4)} mm</b> ｜ 推荐起始：<b>${p_start.toFixed(4)} mm</b> ｜ 稳定生产：<b>${p_stable.toFixed(4)} mm</b></p>
-  <p><b>建议试样三组：</b> <span class="ok">${(p_use*0.98).toFixed(4)}</span> / <span class="ok">${p_use.toFixed(4)}</span> / <span class="ok">${(p_use*1.02).toFixed(4)}</span> mm</p>
-  <p>理论总用丝：<b>${total.toFixed(2)} m</b> ｜ 含损耗：<b class="ok">${total2.toFixed(2)} m</b></p>
-  <p>每股理论：<b>${per.toFixed(2)} m</b> ｜ 建议每股：<b class="ok">${per2.toFixed(2)} m</b></p>
-  <p class="muted">${note}</p>`;
-  const text = `[密绕捻距-修正版]
-芯轴=${core}mm 丝径=${wire}mm 股数=${n}
-推荐捻距≈${p_use.toFixed(4)}mm
-试样范围≈${p_range_low.toFixed(4)}~${p_range_high.toFixed(4)}mm
-理论外径≈${od.toFixed(3)}mm
-用丝比≈1:${ratio.toFixed(2)}
-总用丝≈${total2.toFixed(2)}m
-每股建议≈${per2.toFixed(2)}m`;
-  setOut('out_dense', html, text);
-}
-
-function fillDense(){ d_core.value=0.12; d_wire.value=0.04; d_n.value=6; d_len.value=5; d_mode.value='normal'; d_loss.value=5; d_profile.value='multi'; d_goal.value='stable'; calcDense(); }
-
-function copyResult(){if(!currentText){alert('请先计算');return;} navigator.clipboard.writeText(currentText); alert('已复制');}
-function saveHistory(){if(!currentText){alert('请先计算');return;} const arr=JSON.parse(localStorage.getItem('wm_v43_history')||'[]'); arr.unshift({time:new Date().toLocaleString(),text:currentText}); localStorage.setItem('wm_v43_history',JSON.stringify(arr.slice(0,50))); alert('已保存');}
-function showHistory(){const arr=JSON.parse(localStorage.getItem('wm_v43_history')||'[]'); const box=document.getElementById('historyBox'); box.classList.remove('hidden'); box.textContent=arr.length?arr.map((x,i)=>`#${i+1} ${x.time}\n${x.text}`).join('\n\n---------------------\n\n'):'暂无历史';}
-function exportTxt(){if(!currentText){alert('请先计算');return;} const blob=new Blob([currentText],{type:'text/plain;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='WM计算结果_V4.3.txt'; a.click(); URL.revokeObjectURL(a.href);}
-
-document.addEventListener('DOMContentLoaded',()=>{
-  const pwdInput=document.getElementById('pwd');
-  if(pwdInput){
-    pwdInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter') doLogin(); });
-  }
-});
-
-
-document.addEventListener('DOMContentLoaded',()=>{
-  const lb=document.getElementById('loginBox');
-  const app=document.getElementById('app');
-  if(lb) lb.classList.add('hidden');
-  if(app) app.classList.remove('hidden');
-});
-
-</script>
-</body>
-</html>
+function calcCoil1(){
+ const core=+c1_core.value,wire=+c1_wire.value,n=+c1_n.value,pitch=+c1_pitch.value,dir=c1_dir.value,onoff=c1_on.value,len=+c1_len.value,tight=c1_tight.value,loss=+c1_loss.value;
+ const x=coilLayerByPitch(core,wire,n,pitch,len,tight,loss,onoff);
+ const perRatio = n > 0 ? (x.ratio / n) : 0;
+ setOut('out_c1',`<div class="grid"><div class="kpi"><div class="muted">单股用丝比</div><div class="big">1 : ${perRatio.toFixed(2)}</div></div><div class="kpi"><div class="muted">理论外径</div><div class="big">${x.od.toFixed(3)} mm</div></div><div class="kpi"><div class="muted">捻距</div><div class="big">${x.pitch.toFixed(4)} mm</div></div></div><p>捻向：<b>${dir}</b> ｜ 层状态：<b>${onoff}</b></p><p>理论总用丝：<b>${x.total.toFixed(2)} m</b> ｜ 含损耗：<b class="ok">${x.total2.toFixed(2)} m</b></p><p>每股理论：<b>${x.per.toFixed(2)} m</b> ｜ 建议每股：<b

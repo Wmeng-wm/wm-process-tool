@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>WM 工艺计算平台 V4.4（授权与密绕深度整合版）</title>
+<title>WM 工艺计算平台 V4.5（7×7双螺旋重构版）</title>
 <style>
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
@@ -38,7 +38,7 @@ hr{border:none;border-top:1px solid #edf1f6;margin:14px 0}
 <body>
 
 <div id="loginBox" class="card">
-  <h1>WM 工艺计算平台 V4.4</h1>
+  <h1>WM 工艺计算平台 V4.5</h1>
   <div class="muted">请输入系统授权码以继续使用</div>
   <div class="grid" style="margin-top:14px;">
     <div><input id="pwd" type="password" placeholder="请输入授权码"></div>
@@ -66,24 +66,24 @@ hr{border:none;border-top:1px solid #edf1f6;margin:14px 0}
   </div>
 
   <div id="rope" class="card">
-    <h2>7×7 缆绳（机台捻距版）</h2>
-    <div class="small">按机台逻辑：内层捻距 / 外层捻距 / 7×7总捻距 / 主机转速 联动计算</div>
+    <h2>7×7 缆绳（双螺旋严谨重构版）</h2>
+    <div class="small">按机台真实逻辑重构：内外层及总捻距独立解析，按最长线管算料防断丝。</div>
     <div class="grid" style="margin-top:12px;">
       <div><label>单丝直径 d（mm）</label><input id="r_d" value="0.20" type="number" step="0.001"></div>
-      <div><label>成品长度 L（m）</label><input id="r_L" value="10" type="number" step="0.01"></div>
+      <div><label>成品长度 L（m）</label><input id="r_L" value="200" type="number" step="0.01"></div>
       <div><label>损耗预留（%）</label><input id="r_loss" value="5" type="number" step="0.1"></div>
       <div><label>分丝方式</label><select id="r_spool"><option value="49">49管（每根丝独立）</option><option value="7">7组（按七股小股）</option></select></div>
-      <div><label>主机转速 RPM</label><input id="r_rpm" value="70" type="number" step="0.1"></div>
+      <div><label>主机转速 RPM</label><input id="r_rpm" value="30" type="number" step="0.1"></div>
       <div><label>内层捻距 P1（mm）</label><input id="r_p1" value="20" type="number" step="0.001"></div>
       <div><label>内层捻向</label><select id="r_dir1"><option value="Z" selected>Z捻</option><option value="S">S捻</option></select></div>
-      <div><label>外层捻距 P2（mm）</label><input id="r_p2" value="11" type="number" step="0.001"></div>
+      <div><label>外层捻距 P2（mm）</label><input id="r_p2" value="5" type="number" step="0.001"></div>
       <div><label>外层捻向</label><select id="r_dir2"><option value="Z">Z捻</option><option value="S" selected>S捻</option></select></div>
-      <div><label>7×7 总捻距 P3（mm）</label><input id="r_p3" value="20" type="number" step="0.001"></div>
+      <div><label>7×7 总捻距 P3（mm）</label><input id="r_p3" value="6" type="number" step="0.001"></div>
       <div><label>7×7 总捻向</label><select id="r_dir3"><option value="Z" selected>Z捻</option><option value="S">S捻</option></select></div>
       <div><label>运行时间（min，用于产量）</label><input id="r_run" value="10" type="number" step="0.1"></div>
       <div><label>工艺紧度</label><select id="r_tight"><option value="soft">偏松</option><option value="normal" selected>标准</option><option value="tight">偏紧</option></select></div>
     </div>
-    <div class="row" style="margin-top:14px;"><button onclick="calcRope()">计算</button><button class="btn2" onclick="fillRope()">机台示例</button></div>
+    <div class="row" style="margin-top:14px;"><button onclick="calcRope()">计算缆绳</button><button class="btn2" onclick="fillRope()">面板示例</button></div>
     <div id="out_rope" style="margin-top:16px;"></div>
   </div>
 
@@ -245,8 +245,8 @@ hr{border:none;border-top:1px solid #edf1f6;margin:14px 0}
 // ==========================================
 // 授权逻辑区域
 // ==========================================
-const VALID_CODES = ["WM-NEIBU", "WM-VIP-001"]; // 支持的授权码列表
-let AUTH_DAYS = 365; // 默认授权有效期(天数)，可自行修改
+const VALID_CODES = ["WM-NEIBU", "WM-VIP-001"]; 
+let AUTH_DAYS = 365; 
 let currentText="";
 
 function checkAuth(){
@@ -264,7 +264,6 @@ function checkAuth(){
 function doLogin(){
   const p = document.getElementById('pwd').value.trim(); 
   if(VALID_CODES.includes(p)){
-    // 成功登录，写入过期时间
     const expMs = Date.now() + AUTH_DAYS * 24 * 3600 * 1000;
     localStorage.setItem('wm_auth_expire', expMs.toString());
     showApp();
@@ -276,22 +275,17 @@ function doLogin(){
 function showApp(){
   document.getElementById('loginBox').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
-  
-  // 显示有效期
   const expStr = localStorage.getItem('wm_auth_expire');
   if(expStr){
     const d = new Date(parseInt(expStr, 10));
     document.getElementById('authDateMsg').innerHTML = `授权有效期至：<b class="ok">${d.toLocaleDateString()}</b>`;
   }
-  
   loadSettings();
   calcRope();
 }
 
-// 页面加载自动校验
 document.addEventListener('DOMContentLoaded',()=>{
   if(!checkAuth()){
-    // 如果未授权，则绑定回车键事件
     const pwdInput=document.getElementById('pwd');
     if(pwdInput) pwdInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter') doLogin(); });
   }
@@ -308,6 +302,7 @@ function showTab(id,btn){
 }
 
 function helixFactor(radius,pitch){
+  if(pitch === 0) return 1;
   const c=2*Math.PI*radius; return Math.sqrt(1+(c/pitch)**2);
 }
 
@@ -316,13 +311,11 @@ function tightOdMul(t){return t==='soft'?1.05:(t==='tight'?0.95:1.00);}
 function setOut(id,html,text){document.getElementById(id).innerHTML=html; currentText=text;}
 function getS(k,def){return +(localStorage.getItem(k)||def);}
 
-// 获取某层的参考密绕捻距 (采用多股并列密绕逻辑)
 function calcLayerDenseP(n, wire, tight){
   const kTight = tight==='soft' ? 1.02 : (tight==='tight' ? 0.90 : 0.95);
   return n * wire * kTight * getS('s_dense_pitch','1.000');
 }
 
-// 设置逻辑
 function saveSettings(){
   ['s_rope_ratio','s_rope_od','s_coil_ratio','s_coil_od','s_rope_speed','s_dense_pitch'].forEach(id=>localStorage.setItem(id,document.getElementById(id).value)); 
   alert('校准参数已保存');
@@ -336,45 +329,94 @@ function loadSettings(){
 }
 
 // ==========================================
-// 核心工艺计算
+// 核心工艺计算：7×7 彻底重构 (V4.5)
 // ==========================================
 
 function calcRope(){
- const d=+r_d.value,L=+r_L.value,loss=+r_loss.value,spool=+r_spool.value,rpm=+r_rpm.value,p1=+r_p1.value||20,p3=+r_p3.value||20,dir1=r_dir1.value,dir2=r_dir2.value,dir3=r_dir3.value,runMin=+r_run.value,tight=r_tight.value;
- const ropeRatioFix=getS('s_rope_ratio','1.000'),ropeOdFix=getS('s_rope_od','1.000'),ropeSpeedFix=getS('s_rope_speed','1.000');
+  const d=+r_d.value, L=+r_L.value, loss=+r_loss.value, spool=+r_spool.value, rpm=+r_rpm.value,
+        p1=+r_p1.value||20, p2=+r_p2.value||5, p3=+r_p3.value||6,
+        dir1=r_dir1.value, dir2=r_dir2.value, dir3=r_dir3.value,
+        tight=r_tight.value;
 
- const subHelix=helixFactor(d,p1),subRatio=1+6*subHelix,subOD=3*d,strandPathRadius=1.5*subOD,strandHelix=helixFactor(strandPathRadius,p3);
- let totalRatio=subRatio*(1+6*strandHelix); 
- totalRatio=(totalRatio*0.45+52.0*0.55)*tightMul(tight)*ropeRatioFix;
+  const ropeRatioFix=getS('s_rope_ratio','1.000'), ropeOdFix=getS('s_rope_od','1.000'), ropeSpeedFix=getS('s_rope_speed','1.000');
 
- const strandRatio = totalRatio / 49;
- let od=1.48*(d/0.20)*tightOdMul(tight)*ropeOdFix, speedMM=rpm*p3*ropeSpeedFix, speedM=speedMM/1000, runOutput=speedM*runMin;
- const total=L*totalRatio,total2=total*(1+loss/100),per=total/spool,per2=per*(1+loss/100);
+  // 【核心校正】：严格双螺旋几何模型
+  // 1. 中心股 (1x7) 的螺旋系数：中心丝=1，外围6丝使用P1
+  const h_inner = helixFactor(d, p1);
+  const ratio_core_strand = 1 + 6 * h_inner;
 
- setOut('out_rope',
- `<div class="grid">
-   <div class="kpi"><div class="muted">单股用丝比</div><div class="big">1 : ${strandRatio.toFixed(3)}</div></div>
-   <div class="kpi"><div class="muted">总用丝比</div><div class="big">1 : ${totalRatio.toFixed(2)}</div></div>
-   <div class="kpi"><div class="muted">理论外径</div><div class="big">${od.toFixed(3)} mm</div></div>
-   <div class="kpi"><div class="muted">效率</div><div class="big">${speedMM.toFixed(1)} mm/min</div></div>
- </div>
- <p>内层：<b>${p1.toFixed(3)} mm</b> / ${dir1} ｜ 外层：<b>${(+r_p2.value).toFixed(3)} mm</b> / ${dir2} ｜ 7×7：<b>${p3.toFixed(3)} mm</b> / ${dir3}</p>
- <p>理论总用丝：<b>${total.toFixed(2)} m</b> ｜ 含损耗：<b class="ok">${total2.toFixed(2)} m</b></p>
- <p>每管理论：<b>${per.toFixed(2)} m</b> ｜ 建议每管：<b class="ok">${per2.toFixed(2)} m</b></p>`,
- `[7×7 缆绳-工艺版]\n单股用丝比≈1:${strandRatio.toFixed(3)}\n总用丝比≈1:${totalRatio.toFixed(2)}\n理论外径≈${od.toFixed(3)}mm\n总用丝≈${total2.toFixed(2)}m`
- );
+  // 2. 外层股 (6个1x7) 的内部螺旋系数：使用 P2
+  const h_outer = helixFactor(d, p2);
+  const ratio_outer_strand = 1 + 6 * h_outer;
+
+  // 3. 总缆绕包的螺旋系数 (外层股中心绕着整缆中心转，半径为 1.5d+1.5d = 3d)：使用 P3
+  const strandPathRadius = 3 * d;
+  const h_cable = helixFactor(strandPathRadius, p3);
+
+  // 4. 计算用丝比
+  // 总比 = 1根中心股 + 6根被拉伸的外层股
+  let totalRatio = ratio_core_strand + 6 * (ratio_outer_strand * h_cable);
+  totalRatio = totalRatio * tightMul(tight) * ropeRatioFix;
+
+  // 平均单根丝用量比
+  const avgWireRatio = totalRatio / 49;
+  
+  // 【关键防断丝】：计算消耗最快的那根丝（即外层股的最外层丝，受 P2 和 P3 双重螺旋影响）
+  const maxWireRatio = (h_outer * h_cable) * tightMul(tight) * ropeRatioFix;
+
+  // 【机台效率校正】：根据照片，效率 = 主机转速 × 内层捻距
+  let speedMM = rpm * p1 * ropeSpeedFix;
+  let speedM = speedMM / 1000;
+
+  // 理论外径：7x7 外径标准算法约为股径的 3 倍，即 3 * 3d = 9d
+  let od = 9 * d * tightOdMul(tight) * ropeOdFix;
+
+  // 用料结算
+  const total = L * totalRatio;
+  const total2 = total * (1 + loss/100);
+  
+  let per2 = 0;
+  let perText = '';
+  if (spool == 49) {
+    // 49管必须按照最长的一根丝备料
+    per2 = L * maxWireRatio * (1 + loss/100);
+    perText = '按最长消耗单丝备料';
+  } else {
+    // 7组，每组 1x7，则按外层股 1x7 总体消耗备料
+    per2 = L * (ratio_outer_strand * h_cable) * tightMul(tight) * ropeRatioFix * (1 + loss/100);
+    perText = '按外层股总消耗备料';
+  }
+
+  setOut('out_rope',
+  `<div class="grid">
+    <div class="kpi"><div class="muted">平均单丝用量比</div><div class="big">1 : ${avgWireRatio.toFixed(3)}</div></div>
+    <div class="kpi" style="background:#fff4f4; border:1px solid #ffdcdc;"><div class="muted">最长单丝比(必看)</div><div class="big" style="color:#c62828">1 : ${maxWireRatio.toFixed(3)}</div></div>
+    <div class="kpi"><div class="muted">7×7 总用丝比</div><div class="big">1 : ${totalRatio.toFixed(2)}</div></div>
+  </div>
+  <hr>
+  <div class="grid">
+    <div class="kpi"><div class="muted">理论总外径</div><div class="big">${od.toFixed(3)} mm</div></div>
+    <div class="kpi" style="border-left: 3px solid #0a7a33;"><div class="muted">机台效率 (转速×内层捻距)</div><div class="big" style="color:#0a7a33">${speedMM.toFixed(1)} mm/min</div></div>
+  </div>
+  <p>设定：内层 <b>${p1}</b>mm/${dir1} ｜ 外层 <b>${p2}</b>mm/${dir2} ｜ 7×7 <b>${p3}</b>mm/${dir3}</p>
+  <p>目标含损耗总用丝量：<b class="ok">${total2.toFixed(2)} m</b></p>
+  <p>单管/组建议备料 (${perText})：<b class="bad">${per2.toFixed(2)} m</b> <span class="small muted">(已防断丝短缺)</span></p>`,
+  `[7×7 缆绳-严格算法]\n平均单丝比≈1:${avgWireRatio.toFixed(3)}\n最长单丝比≈1:${maxWireRatio.toFixed(3)}\n总用丝比≈1:${totalRatio.toFixed(2)}\n机台效率≈${speedMM.toFixed(1)}mm/min\n理论外径≈${od.toFixed(3)}mm\n含损耗总用丝≈${total2.toFixed(2)}m\n单管备料建议≈${per2.toFixed(2)}m`
+  );
 }
 
-function fillRope(){r_d.value=0.20;r_L.value=10;r_loss.value=5;r_spool.value=49;r_rpm.value=70;r_p1.value=20;r_p2.value=11;r_p3.value=20;r_dir1.value='Z';r_dir2.value='S';r_dir3.value='Z';r_run.value=10;r_tight.value='normal';calcRope();}
+// 示例参数同步成面板照片上的：内20，外5，总6，转速30
+function fillRope(){r_d.value=0.20;r_L.value=200;r_loss.value=5;r_spool.value=49;r_rpm.value=30;r_p1.value=20;r_p2.value=5;r_p3.value=6;r_dir1.value='Z';r_dir2.value='S';r_dir3.value='Z';r_run.value=10;r_tight.value='normal';calcRope();}
 
+// ==========================================
+// 绕丝计算模块 (保留 V4.4 已更新的正确功能)
+// ==========================================
 function coilLayerByPitch(coreDia,wireDia,n,pitch,len,tight,loss,onoff='ON'){
   if(onoff==='OFF')return{ratio:0,od:coreDia,total:0,total2:0,per:0,per2:0,pitch:pitch}; 
   const coilRatioFix=getS('s_coil_ratio','1.000'),coilOdFix=getS('s_coil_od','1.000'); 
   const pathDia=coreDia+wireDia,one=Math.sqrt(1+Math.pow((Math.PI*pathDia)/pitch,2)),ratio=one*n*tightMul(tight)*coilRatioFix,od=(coreDia+2*wireDia)*tightOdMul(tight)*coilOdFix,total=ratio*len,total2=total*(1+loss/100),per=n>0?total/n:0,per2=n>0?total2/n:0; 
   return{ratio,od,total,total2,per,per2,pitch};
 }
-
-// =================绕丝计算模块 (已全面更新展示格式与密绕)=================
 
 function calcCoil1(){
   const core=+c1_core.value, wire=+c1_wire.value, n=+c1_n.value, pitch=+c1_pitch.value, dir=c1_dir.value, onoff=c1_on.value, len=+c1_len.value, tight=c1_tight.value, loss=+c1_loss.value;
@@ -571,7 +613,7 @@ function fillDense(){ d_core.value=0.12; d_wire.value=0.04; d_n.value=6; d_len.v
 function copyResult(){if(!currentText){alert('请先计算');return;} navigator.clipboard.writeText(currentText); alert('已复制');}
 function saveHistory(){if(!currentText){alert('请先计算');return;} const arr=JSON.parse(localStorage.getItem('wm_v43_history')||'[]'); arr.unshift({time:new Date().toLocaleString(),text:currentText}); localStorage.setItem('wm_v43_history',JSON.stringify(arr.slice(0,50))); alert('已保存');}
 function showHistory(){const arr=JSON.parse(localStorage.getItem('wm_v43_history')||'[]'); const box=document.getElementById('historyBox'); box.classList.remove('hidden'); box.textContent=arr.length?arr.map((x,i)=>`#${i+1} ${x.time}\n${x.text}`).join('\n\n---------------------\n\n'):'暂无历史';}
-function exportTxt(){if(!currentText){alert('请先计算');return;} const blob=new Blob([currentText],{type:'text/plain;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='WM工艺计算记录_V4.4.txt'; a.click(); URL.revokeObjectURL(a.href);}
+function exportTxt(){if(!currentText){alert('请先计算');return;} const blob=new Blob([currentText],{type:'text/plain;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='WM工艺计算记录_V4.5.txt'; a.click(); URL.revokeObjectURL(a.href);}
 
 </script>
 </body>
